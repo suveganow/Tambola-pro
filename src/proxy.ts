@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher, clerkClient } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 // User routes - require user authentication
@@ -25,6 +25,7 @@ const isUserAuthRoute = createRouteMatcher([
 // Admin auth route (main /admin page handles auth inline)
 const isAdminAuthRoute = createRouteMatcher([
   '/admin',
+  '/admin/sso-callback(.*)',
 ]);
 
 // Public routes that don't require any authentication

@@ -351,6 +351,7 @@ export function CreateGameDialog({ onGameCreated }: { onGameCreated?: () => void
   };
 
   const onSubmit = async (data: GameFormValues) => {
+    console.log("Submitting game data:", data);
     setLoading(true);
     try {
       // Calculate total winners for autoClose
@@ -461,6 +462,13 @@ export function CreateGameDialog({ onGameCreated }: { onGameCreated?: () => void
   const nextStep = () => setStep(s => Math.min(s + 1, totalSteps));
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
+  const onError = (errors: any) => {
+    console.error("Form validation errors:", errors);
+    toast.error("Please check the form for errors", {
+      description: Object.keys(errors).map(key => `${key}: ${errors[key]?.message || 'Invalid'}`).join(', ')
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogTrigger asChild>
@@ -480,7 +488,7 @@ export function CreateGameDialog({ onGameCreated }: { onGameCreated?: () => void
 
         <StepIndicator step={step} totalSteps={totalSteps} />
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit, onError)}>
           <ScrollArea className="h-[400px] px-6">
             {/* Step 1: Basic Info */}
             {step === 1 && (
@@ -588,13 +596,7 @@ export function CreateGameDialog({ onGameCreated }: { onGameCreated?: () => void
                       control={control}
                       register={register}
                       errors={errors}
-                      onRemove={() => {
-                        if (ruleFields.length > 1) {
-                          removeRule(index);
-                        } else {
-                          toast.error("At least one winning rule is required");
-                        }
-                      }}
+                      onRemove={() => removeRule(index)}
                     />
                   ))}
                 </div>

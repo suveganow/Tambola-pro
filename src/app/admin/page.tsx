@@ -124,7 +124,7 @@ export default function AdminAuthPage() {
             <p className="text-gray-300">Sign in to access admin dashboard</p>
           </div>
 
-          <AdminGoogleSSO mode="signIn" />
+          <AdminGoogleSSO mode="signUp" label="Sign in with Google" />
         </div>
       </div>
     </div>
