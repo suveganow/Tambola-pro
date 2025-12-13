@@ -25,7 +25,8 @@ import { useState, useCallback } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import axios from "axios";
+import { api } from "@/lib/axios-client";
+import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -357,7 +358,7 @@ export function CreateGameDialog({ onGameCreated }: { onGameCreated?: () => void
       // Calculate total winners for autoClose
       const totalMaxWinners = data.winningRules.reduce((sum, rule) => sum + rule.maxWinners, 0);
 
-      const response = await axios.post("/api/games", {
+      const response = await api.post<any>("/api/games", {
         name: data.name,
         totalTickets: data.totalTickets,
         ticketXpCost: data.ticketXpCost,
@@ -391,7 +392,7 @@ export function CreateGameDialog({ onGameCreated }: { onGameCreated?: () => void
       });
 
       toast.success("Game created successfully!", {
-        description: `"${response.data.name}" is now ready for players.`,
+        description: `"${response.name}" is now ready for players.`,
       });
       setOpen(false);
       setStep(1);
@@ -399,48 +400,7 @@ export function CreateGameDialog({ onGameCreated }: { onGameCreated?: () => void
       if (onGameCreated) onGameCreated();
     } catch (error: any) {
       console.error("Game creation error:", error);
-
-      // Parse the error message from various possible sources
-      let errorMessage = "Failed to create game. Please try again.";
-
-      if (error.response) {
-        // Server responded with an error
-        const responseData = error.response.data;
-
-        if (typeof responseData === 'string') {
-          errorMessage = responseData;
-        } else if (responseData?.error) {
-          if (typeof responseData.error === 'string') {
-            errorMessage = responseData.error;
-          } else if (Array.isArray(responseData.error)) {
-            // Zod validation errors
-            errorMessage = responseData.error.map((e: any) => e.message || e.path?.join('.') || 'Validation error').join(', ');
-          } else if (responseData.error.message) {
-            errorMessage = responseData.error.message;
-          }
-        } else if (responseData?.details) {
-          // Handle validation details
-          if (Array.isArray(responseData.details)) {
-            errorMessage = responseData.details.map((d: any) => `${d.path?.join('.')}: ${d.message}`).join(', ');
-          }
-        } else if (responseData?.message) {
-          errorMessage = responseData.message;
-        }
-
-        // Add status code context for common errors
-        if (error.response.status === 401) {
-          errorMessage = "You must be logged in as an admin to create games.";
-        } else if (error.response.status === 403) {
-          errorMessage = "You don't have permission to create games.";
-        } else if (error.response.status === 500) {
-          errorMessage = "Server error occurred. Please try again later.";
-        }
-      } else if (error.request) {
-        // Request was made but no response received
-        errorMessage = "Unable to reach the server. Please check your connection.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      const errorMessage = getErrorMessage(error);
 
       toast.error("Failed to create game", {
         description: errorMessage,

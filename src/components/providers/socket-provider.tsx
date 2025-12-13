@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useCallback, ReactNode } from "re
 import { Socket } from "socket.io-client";
 import { getSocket, connectSocket, disconnectSocket, joinGame, leaveGame } from "@/lib/socket";
 import { useGameStore, WinnerInfo } from "@/store/useGameStore";
+import { toast } from "sonner";
+import { useVoiceAnnouncer } from "@/components/game/voice-announcer";
 
 interface SocketContextType {
   socket: Socket | null;
@@ -36,6 +38,8 @@ export function SocketProvider({ children, gameId }: SocketProviderProps) {
     addWinner,
   } = useGameStore();
 
+  const { announceText } = useVoiceAnnouncer();
+
   // Handle socket events
   const setupEventListeners = useCallback((socket: Socket) => {
     // Connection events
@@ -57,6 +61,15 @@ export function SocketProvider({ children, gameId }: SocketProviderProps) {
     socket.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
       setIsConnected(false);
+    });
+
+    // Notification events
+    socket.on("player-joined", (data: { userId: string; name?: string }) => {
+      console.log("Player joined:", data);
+      const name = data.name || `User ${data.userId.slice(-4)}`;
+      toast.info(`${name} joined the game!`);
+      // Voice announcement
+      announceText(`${name} joined the game`);
     });
 
     // Game events

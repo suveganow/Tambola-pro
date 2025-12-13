@@ -161,6 +161,12 @@ app.prepare().then(() => {
     socket.on("join-game", (gameId: string) => {
       socket.join(`game-${gameId}`);
       console.log(`Socket ${socket.id} joined game-${gameId}`);
+
+      // Notify others in the room
+      socket.broadcast.to(`game-${gameId}`).emit("player-joined", {
+        userId: "Anonymous", // Ideally pass real user info here
+        name: "A player"
+      });
     });
 
     // Leave a game room

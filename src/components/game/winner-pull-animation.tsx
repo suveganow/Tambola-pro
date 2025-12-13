@@ -203,8 +203,8 @@ export function WinnerPullAnimation({
                   <p className="text-lg font-bold text-yellow-400">{prizeName}</p>
                 </div>
                 <div className="bg-white/10 rounded-lg p-3">
-                  <p className="text-gray-400 text-xs">Amount</p>
-                  <p className="text-lg font-bold text-green-400">₹{prizeAmount.toLocaleString()}</p>
+                  <p className="text-gray-400 text-xs">Prize Value</p>
+                  <p className="text-lg font-bold text-green-400">{prizeAmount.toLocaleString()} XP</p>
                 </div>
               </div>
 

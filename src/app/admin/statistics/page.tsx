@@ -122,7 +122,7 @@ export default function StatisticsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <StatCard
           title="Total Revenue"
-          value={`₹${stats.totalRevenue.toLocaleString()}`}
+          value={`${stats.totalRevenue.toLocaleString()} XP`}
           icon={<DollarSign className="h-4 w-4 text-green-500" />}
           className="border-l-4 border-l-green-500"
         />
@@ -169,7 +169,7 @@ export default function StatisticsPage() {
                             }%`,
                           minHeight: day.revenue > 0 ? "8px" : "2px",
                         }}
-                        title={`₹${day.revenue}`}
+                        title={`${day.revenue} XP`}
                       />
                     </div>
                   ))}
@@ -185,7 +185,7 @@ export default function StatisticsPage() {
                   {revenueByDay.map((day, index) => (
                     <div key={index} className="flex-1 text-center">
                       <div className="font-semibold text-gray-900">
-                        ₹{day.revenue.toLocaleString()}
+                        {day.revenue.toLocaleString()} XP
                       </div>
                       <div className="text-xs text-gray-500 hidden sm:block">
                         {day.tickets} tickets
@@ -316,10 +316,9 @@ export default function StatisticsPage() {
               <div>
                 <p className="text-sm text-gray-500">Avg Revenue per Game</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ₹
                   {stats.totalGames > 0
                     ? Math.round(stats.totalRevenue / stats.totalGames).toLocaleString()
-                    : 0}
+                    : 0} XP
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">

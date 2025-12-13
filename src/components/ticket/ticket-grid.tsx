@@ -77,7 +77,7 @@ export function TicketGrid({
         <div className="absolute -top-3 -left-2 z-10">
           <div className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg">
             <Star className="w-3 h-3" />
-            ₹{winningInfo.prizeAmount.toLocaleString()}
+            {winningInfo.prizeAmount.toLocaleString()} XP
           </div>
         </div>
       )}

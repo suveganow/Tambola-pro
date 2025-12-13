@@ -211,7 +211,7 @@ export function WinnerAnnouncement({
               {/* Prize amount with animation */}
               <div className="mt-4 relative">
                 <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-500 via-emerald-500 to-green-500">
-                  ₹{prizeAmount.toLocaleString('en-IN')}
+                  {prizeAmount.toLocaleString('en-IN')} XP
                 </div>
               </div>
 

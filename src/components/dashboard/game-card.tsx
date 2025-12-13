@@ -122,8 +122,8 @@ export function GameCard({
 
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div className="bg-purple-50 p-3 rounded-lg text-center">
-            <div className="text-xs text-purple-600 uppercase font-semibold">Price</div>
-            <div className="text-lg font-bold text-purple-900">₹{ticketPrice}</div>
+            <div className="text-xs text-purple-600 uppercase font-semibold">XP Cost</div>
+            <div className="text-lg font-bold text-purple-900">{ticketPrice} XP</div>
           </div>
           <div className="bg-blue-50 p-3 rounded-lg text-center">
             <div className="text-xs text-blue-600 uppercase font-semibold">Tickets</div>

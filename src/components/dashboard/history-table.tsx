@@ -29,9 +29,9 @@ export function HistoryTable({ data }: HistoryTableProps) {
           <TableRow>
             <TableHead>Date</TableHead>
             <TableHead>Game ID</TableHead>
-            <TableHead>Ticket Price</TableHead>
+            <TableHead>XP Cost</TableHead>
             <TableHead>Pattern</TableHead>
-            <TableHead>Prize</TableHead>
+            <TableHead>XP Won</TableHead>
             <TableHead className="text-right">Status</TableHead>
           </TableRow>
         </TableHeader>
@@ -40,9 +40,9 @@ export function HistoryTable({ data }: HistoryTableProps) {
             <TableRow key={item.id}>
               <TableCell>{item.date}</TableCell>
               <TableCell className="font-medium">{item.id}</TableCell>
-              <TableCell>₹{item.ticketPrice}</TableCell>
+              <TableCell>{item.ticketPrice} XP</TableCell>
               <TableCell>{item.pattern || "-"}</TableCell>
-              <TableCell>₹{item.prize}</TableCell>
+              <TableCell>{item.prize} XP</TableCell>
               <TableCell className="text-right">
                 <Badge
                   variant={item.status === "WON" ? "default" : "secondary"}

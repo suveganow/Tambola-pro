@@ -43,12 +43,12 @@ export function GameHeader({
           <div
             key={index}
             className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium border ${prize.status === "WON"
-                ? "bg-gray-100 text-gray-500 border-gray-200"
-                : "bg-yellow-50 text-yellow-800 border-yellow-200"
+              ? "bg-gray-100 text-gray-500 border-gray-200"
+              : "bg-yellow-50 text-yellow-800 border-yellow-200"
               }`}
           >
             <Trophy className="w-3 h-3 mr-2" />
-            {prize.name}: ₹{prize.amount}
+            {prize.name}: {prize.amount} XP
             {prize.status === "WON" && <span className="ml-2 text-xs">(WON)</span>}
           </div>
         ))}

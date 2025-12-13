@@ -204,7 +204,7 @@ export function AllTicketsModal({
             </div>
           </div>
           <div className="text-sm font-medium">
-            Price: <span className="text-purple-600">₹{ticketPrice}</span> per ticket
+            Cost: <span className="text-purple-600">{ticketPrice} XP</span> per ticket
           </div>
         </div>
 
@@ -274,7 +274,7 @@ export function AllTicketsModal({
               </div>
               <div className="text-right">
                 <div className="text-sm text-gray-600">Total Cost</div>
-                <div className="text-xl font-bold text-green-700">₹{totalCost}</div>
+                <div className="text-xl font-bold text-green-700">{totalCost} XP</div>
               </div>
             </div>
           </div>
@@ -297,7 +297,7 @@ export function AllTicketsModal({
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
             {isBooking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isBooking ? "Booking..." : `Book ${selectedTickets.length} Ticket(s) - ₹${totalCost}`}
+            {isBooking ? "Booking..." : `Book ${selectedTickets.length} Ticket(s) - ${totalCost} XP`}
           </Button>
         </DialogFooter>
       </DialogContent>

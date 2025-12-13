@@ -201,11 +201,27 @@ function GameControlContent() {
   }, [fetchGame]);
 
   // Game control handlers
-  const handleStartGame = () => {
-    // Use socket to start game and notify all booked users
-    startGameSocket(gameId);
-    if (isVoiceEnabled) announceGameStart();
-    toast.success("Game started! All users have been notified.");
+  const handleStartGame = async () => {
+    try {
+      // 1. Call API to update DB state (reliable)
+      await axios.post(`/api/games/${gameId}/start`);
+
+      // 2. Emit socket event for real-time updates (if connected)
+      startGameSocket(gameId);
+
+      // 3. Local updates
+      if (isVoiceEnabled) announceGameStart();
+      toast.success("Game started successfully!", {
+        description: "All users have been notified."
+      });
+
+      // Refresh game data
+      fetchGame();
+    } catch (error: any) {
+      console.error("Failed to start game:", error);
+      const msg = error.response?.data?.error || "Failed to start game";
+      toast.error(msg);
+    }
   };
 
   const handleStartAutoPlay = () => {

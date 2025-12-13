@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { TicketGrid } from "@/components/ticket/ticket-grid";
 import { Loader2, AlertCircle, Lock } from "lucide-react";
-import axios from "axios";
+import { api } from "@/lib/axios-client";
+import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface BookingDialogProps {
@@ -48,8 +49,8 @@ export function BookingDialog({
   const verifyGameStatus = async () => {
     setIsVerifying(true);
     try {
-      const res = await axios.get(`/api/games/${gameId}`);
-      setCurrentGameStatus(res.data.status);
+      const data = await api.get<any>(`/api/games/${gameId}`);
+      setCurrentGameStatus(data.status);
     } catch (error) {
       console.error("Failed to verify game status:", error);
     } finally {
@@ -67,7 +68,7 @@ export function BookingDialog({
 
     setIsBooking(true);
     try {
-      await axios.post("/api/tickets/buy", {
+      await api.post("/api/tickets/buy", {
         gameId,
         quantity: 1,
       });
@@ -78,29 +79,7 @@ export function BookingDialog({
       onOpenChange(false);
     } catch (error: any) {
       console.error("Booking error:", error);
-
-      let errorMessage = "Failed to book ticket. Please try again.";
-
-      if (error.response) {
-        const status = error.response.status;
-        const data = error.response.data;
-
-        if (status === 401) {
-          errorMessage = "Please log in to book tickets.";
-        } else if (status === 400) {
-          errorMessage = data?.error || "Invalid booking request.";
-        } else if (status === 404) {
-          errorMessage = "Game not found. It may have been removed.";
-        } else if (status === 409) {
-          errorMessage = data?.error || "Ticket is no longer available.";
-        } else if (status === 500) {
-          errorMessage = "Server error occurred. Please try again later.";
-        } else if (data?.error) {
-          errorMessage = typeof data.error === 'string' ? data.error : "Booking failed.";
-        }
-      } else if (error.request) {
-        errorMessage = "Unable to connect to server. Check your connection.";
-      }
+      const errorMessage = getErrorMessage(error);
 
       toast.error("Booking Failed", {
         description: errorMessage,
@@ -179,8 +158,8 @@ export function BookingDialog({
         ) : (
           <div className="py-6 space-y-4">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-500">Ticket Price:</span>
-              <span className="font-bold text-lg">₹{ticketPrice}</span>
+              <span className="text-gray-500">Ticket Cost:</span>
+              <span className="font-bold text-lg">{ticketPrice} XP</span>
             </div>
 
             <div className="space-y-2">
@@ -212,7 +191,7 @@ export function BookingDialog({
                 className="bg-purple-600 hover:bg-purple-700"
               >
                 {isBooking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isBooking ? "Booking..." : "Confirm & Pay"}
+                {isBooking ? "Booking..." : "Confirm & Redeem XP"}
               </Button>
             </>
           )}

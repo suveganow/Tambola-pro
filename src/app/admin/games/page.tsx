@@ -197,8 +197,8 @@ export default function GamesPage() {
                       <div className="text-gray-500 text-xs">Total</div>
                     </div>
                     <div className="text-center p-2 bg-gray-50 rounded">
-                      <div className="font-semibold">₹{game.ticketPrice}</div>
-                      <div className="text-gray-500 text-xs">Price</div>
+                      <div className="font-semibold">{game.ticketPrice} XP</div>
+                      <div className="text-gray-500 text-xs">XP Cost</div>
                     </div>
                   </div>
 
@@ -236,7 +236,7 @@ export default function GamesPage() {
                     Tickets
                   </th>
                   <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">
-                    Price
+                    XP Cost
                   </th>
                   <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">
                     Created
@@ -261,7 +261,7 @@ export default function GamesPage() {
                       {game.soldTickets} / {game.totalTickets}
                     </td>
                     <td className="px-6 py-4 text-gray-600">
-                      ₹{game.ticketPrice}
+                      {game.ticketPrice} XP
                     </td>
                     <td className="px-6 py-4 text-gray-600">
                       {new Date(game.createdAt).toLocaleDateString()}

@@ -4,6 +4,7 @@ import { useSignIn } from '@clerk/nextjs';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/axios-client';
+import { getErrorMessage } from '@/lib/utils';
 
 interface AdminSignInProps {
   onSwitchToSignUp?: () => void;
@@ -49,6 +50,7 @@ export function AdminSignIn({ onSwitchToSignUp }: AdminSignInProps) {
           });
         } catch (regError) {
           console.error('Admin registration error:', regError);
+          // Non-blocking error, user is signed in
         }
 
         router.push('/admin/dashboard');
@@ -59,7 +61,9 @@ export function AdminSignIn({ onSwitchToSignUp }: AdminSignInProps) {
       }
     } catch (err: any) {
       console.error('Admin sign-in error:', err);
-      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid email or password');
+      // For Clerk errors, we check err.errors first
+      const message = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || getErrorMessage(err);
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +86,8 @@ export function AdminSignIn({ onSwitchToSignUp }: AdminSignInProps) {
       setView('resetCode');
     } catch (err: any) {
       console.error('Forgot password error:', err);
-      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Failed to send reset code');
+      const message = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || getErrorMessage(err);
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +114,8 @@ export function AdminSignIn({ onSwitchToSignUp }: AdminSignInProps) {
       }
     } catch (err: any) {
       console.error('Verify code error:', err);
-      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid verification code');
+      const message = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || getErrorMessage(err);
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -146,7 +152,8 @@ export function AdminSignIn({ onSwitchToSignUp }: AdminSignInProps) {
       }
     } catch (err: any) {
       console.error('Reset password error:', err);
-      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Failed to reset password');
+      const message = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || getErrorMessage(err);
+      setError(message);
     } finally {
       setIsLoading(false);
     }
