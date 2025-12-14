@@ -4,17 +4,17 @@ import { useEffect, useRef, useCallback } from "react";
 
 // Preferred female voices in order of preference
 const PREFERRED_FEMALE_VOICES = [
-  "Google UK English Female",
-  "Google US English Female",
-  "Microsoft Zira",
-  "Microsoft Hazel",
-  "Samantha",
-  "Victoria",
+  "Google हिन्दी", // Google Hindi (often sounds like Indian English when speaking English)
+  "Google Indian English Female",
+  "Microsoft Heera",
+  "Microsoft Veena",
+  "Veena",
+  "Rishi", // Sometimes male, but often used for Indian context
+  "Sangeeta",
   "Karen",
   "Moira",
   "Tessa",
   "Fiona",
-  "Veena",
 ];
 
 export function useVoiceAnnouncer() {
@@ -29,31 +29,39 @@ export function useVoiceAnnouncer() {
     const voices = synth.current.getVoices();
     if (voices.length === 0) return null;
 
-    // Try to find a preferred female voice
+    // 1. Try to find a preferred Indian/Female voice from the list
     for (const preferredName of PREFERRED_FEMALE_VOICES) {
       const voice = voices.find(v =>
         v.name.toLowerCase().includes(preferredName.toLowerCase())
       );
-      if (voice) return voice;
+      if (voice) return voice; // Winner
     }
 
-    // Fallback: try to find any voice with "female" in the name
+    // 2. Try to find any voice with "Indi" (India/Hindi)
+    const indianVoice = voices.find(v =>
+      v.name.includes("India") ||
+      v.lang.includes("IN") ||
+      v.name.includes("Hindi")
+    );
+    if (indianVoice) return indianVoice;
+
+    // 3. Fallback to any female voice
     const femaleVoice = voices.find(v =>
       v.name.toLowerCase().includes("female")
     );
     if (femaleVoice) return femaleVoice;
 
-    // Fallback: try common female voice patterns
+    // 4. Fallback to common female names
     const commonFemale = voices.find(v =>
       v.name.includes("Zira") ||
       v.name.includes("Hazel") ||
       v.name.includes("Susan") ||
-      v.name.includes("Linda") ||
-      v.name.includes("Catherine")
+      v.name.includes("Samantha") ||
+      v.name.includes("Victoria")
     );
     if (commonFemale) return commonFemale;
 
-    // Default to first English voice
+    // 5. Default to the first English voice
     const englishVoice = voices.find(v => v.lang.startsWith("en"));
     return englishVoice || voices[0];
   }, []);

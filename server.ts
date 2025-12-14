@@ -181,187 +181,15 @@ app.prepare().then(() => {
       io.to(`game-${gameId}`).emit("number-called", { number, timestamp: Date.now() });
     });
 
-    // Admin manual number call with winner detection
-    socket.on("admin-call-number", async ({ gameId, number }) => {
-      console.log(`Admin calling number ${number} in game-${gameId}`);
+    // Helper to start auto-play loop
+    const startAutoPlayLoop = async (gameId: string) => {
+      // Clear existing
+      if (activeGames.has(gameId)) clearInterval(activeGames.get(gameId)!);
 
-      await connectDB();
-      const { Game, Ticket, User } = await getModels();
-
-      try {
-        const game = await Game.findById(gameId);
-        if (!game) {
-          socket.emit("error", { message: "Game not found" });
-          return;
-        }
-
-        if (game.status !== "LIVE") {
-          socket.emit("error", { message: "Game is not live" });
-          return;
-        }
-
-        const drawnNumbers: number[] = game.drawnNumbers || [];
-
-        // Check if number already called
-        if (drawnNumbers.includes(number)) {
-          socket.emit("error", { message: `Number ${number} already called` });
-          return;
-        }
-
-        // Add the manually called number
-        const updatedNumbers = [...drawnNumbers, number];
-        await Game.findByIdAndUpdate(gameId, {
-          drawnNumbers: updatedNumbers,
-        });
-
-        // Broadcast the number to all users
-        io.to(`game-${gameId}`).emit("number-called", {
-          number,
-          drawnNumbers: updatedNumbers,
-          timestamp: Date.now(),
-          isManual: true,
-        });
-        console.log(`Admin called ${number} in game-${gameId} (${updatedNumbers.length}/90)`);
-
-        // Check for winners (same logic as auto-play)
-        const activeTickets = await Ticket.find({
-          gameId: gameId,
-          status: "ACTIVE",
-        });
-
-        const currentGame = await Game.findById(gameId);
-        if (!currentGame) return;
-
-        let totalWinnersFound = 0;
-        const winnersToAnnounce: any[] = [];
-
-        for (const rule of currentGame.winningRules) {
-          if (rule.isCompleted) continue;
-
-          for (const ticket of activeTickets) {
-            const alreadyWon = rule.prizes.some(
-              (p: any) => p.winnerTicketId === ticket._id.toString()
-            );
-            if (alreadyWon) continue;
-
-            const isWinner = checkWinForRule(ticket.numbers, updatedNumbers, rule.type);
-
-            if (isWinner) {
-              const openPrize = rule.prizes.find((p: any) => p.status === "OPEN");
-
-              if (openPrize) {
-                const user = await User.findOne({ clerkId: ticket.userId });
-                const winnerName = user?.name || user?.email || `User ${ticket.userId.slice(-6)}`;
-
-                openPrize.winner = ticket.userId;
-                openPrize.winnerTicketId = ticket._id.toString();
-                openPrize.status = "WON";
-                openPrize.wonAt = new Date();
-
-                rule.currentWinners += 1;
-                if (rule.currentWinners >= rule.maxWinners) {
-                  rule.isCompleted = true;
-                }
-
-                currentGame.autoClose.currentTotalWinners += 1;
-                totalWinnersFound++;
-
-                winnersToAnnounce.push({
-                  winnerName,
-                  winnerId: ticket.userId,
-                  ticketId: ticket._id.toString(),
-                  ticketNumber: ticket.ticketNumber,
-                  prizeName: openPrize.name,
-                  prizeAmount: openPrize.amount,
-                  xpPoints: openPrize.xpPoints,
-                  ruleType: rule.type,
-                });
-
-                console.log(`Winner found! ${winnerName} won ${openPrize.name} (${rule.type})`);
-              }
-            }
-          }
-        }
-
-        if (totalWinnersFound > 0) {
-          await currentGame.save();
-          for (const winner of winnersToAnnounce) {
-            io.to(`game-${gameId}`).emit("winner-detected", winner);
-          }
-          await Game.findByIdAndUpdate(gameId, {
-            prizes: currentGame.winningRules.flatMap((r: any) => r.prizes),
-          });
-        }
-
-        // Check if all numbers drawn
-        if (updatedNumbers.length >= 90) {
-          await Game.findByIdAndUpdate(gameId, { status: "CLOSED" });
-          io.to(`game-${gameId}`).emit("game-closed", {
-            reason: "all_numbers_drawn",
-            totalNumbers: 90,
-          });
-        }
-      } catch (error) {
-        console.error("Error in admin-call-number:", error);
-        socket.emit("error", { message: "Failed to call number" });
-      }
-    });
-
-    // Start game and notify all booked users
-    socket.on("start-game", async ({ gameId }) => {
-      console.log(`Starting game-${gameId}`);
-
-      await connectDB();
-      const { Game, Ticket, User } = await getModels();
-
-      try {
-        // Update game status to LIVE
-        await Game.findByIdAndUpdate(gameId, { status: "LIVE" });
-
-        // Get all ticket holders for this game
-        const tickets = await Ticket.find({ gameId, status: "ACTIVE" }).distinct("userId");
-
-        // Broadcast game started to the game room
-        io.to(`game-${gameId}`).emit("game-started", {
-          gameId,
-          message: "Game has started! Join now to play.",
-        });
-
-        // Also emit to all connected sockets (for notifications)
-        io.emit("game-notification", {
-          type: "GAME_STARTED",
-          gameId,
-          message: "A game you have tickets for has started!",
-          ticketHolders: tickets,
-        });
-
-        io.to(`game-${gameId}`).emit("game-status-changed", { status: "LIVE" });
-        console.log(`Game ${gameId} started, notified ${tickets.length} users`);
-      } catch (error) {
-        console.error("Error starting game:", error);
-        socket.emit("error", { message: "Failed to start game" });
-      }
-    });
-
-    // Start auto-play
-    socket.on("start-auto-play", async ({ gameId }) => {
-      console.log(`Starting auto-play for game-${gameId}`);
-
-      // Clear any existing interval
-      if (activeGames.has(gameId)) {
-        clearInterval(activeGames.get(gameId)!);
-      }
-
-      await connectDB();
-      const { Game, Ticket, User } = await getModels();
-
-      // Update game status to LIVE
-      await Game.findByIdAndUpdate(gameId, { status: "LIVE" });
-      io.to(`game-${gameId}`).emit("game-status-changed", { status: "LIVE" });
-
-      // Start the auto-play interval
       const interval = setInterval(async () => {
         try {
+          await connectDB();
+          const { Game, Ticket, User } = await getModels();
           const game = await Game.findById(gameId);
 
           if (!game || game.status === "CLOSED") {
@@ -372,13 +200,13 @@ app.prepare().then(() => {
           }
 
           if (game.status === "PAUSED") {
-            console.log(`Game ${gameId} is paused, skipping number draw`);
+            // Just skip this tick, don't stop
             return;
           }
 
           const drawnNumbers: number[] = game.drawnNumbers || [];
 
-          // Check if all numbers are drawn
+          // Check if all numbers drawn
           if (drawnNumbers.length >= 90) {
             console.log(`All numbers drawn in game-${gameId}, ending game`);
             await Game.findByIdAndUpdate(gameId, { status: "CLOSED" });
@@ -444,29 +272,31 @@ app.prepare().then(() => {
                 const openPrize = rule.prizes.find((p: any) => p.status === "OPEN");
 
                 if (openPrize) {
-                  // Get user info
                   const user = await User.findOne({ clerkId: ticket.userId });
-                  const winnerName = user?.name || user?.email || `User ${ticket.userId.slice(-6)}`;
+                  // Construct a proper name from first/last name, or fall back to email or ID
+                  const winnerName = (user?.firstName || user?.lastName)
+                    ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
+                    : `User ${ticket.userId.slice(-6)}`;
+                  const winnerEmail = user?.email || "";
 
-                  // Update the prize
                   openPrize.winner = ticket.userId;
+                  openPrize.winnerName = winnerName;
+                  openPrize.winnerEmail = winnerEmail;
                   openPrize.winnerTicketId = ticket._id.toString();
                   openPrize.status = "WON";
                   openPrize.wonAt = new Date();
 
-                  // Update rule winner count
                   rule.currentWinners += 1;
                   if (rule.currentWinners >= rule.maxWinners) {
                     rule.isCompleted = true;
                   }
 
-                  // Update auto-close tracking
                   currentGame.autoClose.currentTotalWinners += 1;
                   totalWinnersFound++;
 
-                  // Prepare winner announcement
                   winnersToAnnounce.push({
                     winnerName,
+                    winnerEmail,
                     winnerId: ticket.userId,
                     ticketId: ticket._id.toString(),
                     prizeName: openPrize.name,
@@ -475,7 +305,7 @@ app.prepare().then(() => {
                     ruleType: rule.type,
                   });
 
-                  console.log(`Winner found! ${winnerName} won ${openPrize.name} (${rule.type})`);
+                  console.log(`Winner found! ${winnerName} (${winnerEmail}) won ${openPrize.name} (${rule.type})`);
                 }
               }
             }
@@ -520,9 +350,202 @@ app.prepare().then(() => {
         } catch (error) {
           console.error("Error in auto-play:", error);
         }
-      }, 1000); // 1 second interval
+      }, 4000); // 4 second interval (Updated as per request)
 
       activeGames.set(gameId, interval);
+    };
+
+    // Admin manual number call with winner detection
+    socket.on("admin-call-number", async ({ gameId, number }) => {
+      console.log(`Admin calling number ${number} in game-${gameId}`);
+
+      await connectDB();
+      const { Game, Ticket, User } = await getModels();
+
+      try {
+        const game = await Game.findById(gameId);
+        if (!game) {
+          socket.emit("error", { message: "Game not found" });
+          return;
+        }
+
+        if (game.status !== "LIVE" && game.status !== "PAUSED") {
+          socket.emit("error", { message: "Game is not live" });
+          return;
+        }
+
+        const drawnNumbers: number[] = game.drawnNumbers || [];
+
+        // Check if number already called
+        if (drawnNumbers.includes(number)) {
+          socket.emit("error", { message: `Number ${number} already called` });
+          return;
+        }
+
+        // Add the manually called number
+        const updatedNumbers = [...drawnNumbers, number];
+        await Game.findByIdAndUpdate(gameId, {
+          drawnNumbers: updatedNumbers,
+        });
+
+        // Broadcast the number to all users
+        io.to(`game-${gameId}`).emit("number-called", {
+          number,
+          drawnNumbers: updatedNumbers,
+          timestamp: Date.now(),
+          isManual: true,
+        });
+        console.log(`Admin called ${number} in game-${gameId} (${updatedNumbers.length}/90)`);
+
+        // Check for winners (same logic as auto-play)
+        const activeTickets = await Ticket.find({
+          gameId: gameId,
+          status: "ACTIVE",
+        });
+
+        const currentGame = await Game.findById(gameId);
+        if (!currentGame) return;
+
+        let totalWinnersFound = 0;
+        const winnersToAnnounce: any[] = [];
+
+        for (const rule of currentGame.winningRules) {
+          if (rule.isCompleted) continue;
+
+          for (const ticket of activeTickets) {
+            const alreadyWon = rule.prizes.some(
+              (p: any) => p.winnerTicketId === ticket._id.toString()
+            );
+            if (alreadyWon) continue;
+
+            const isWinner = checkWinForRule(ticket.numbers, updatedNumbers, rule.type);
+
+            if (isWinner) {
+              const openPrize = rule.prizes.find((p: any) => p.status === "OPEN");
+
+              if (openPrize) {
+                const user = await User.findOne({ clerkId: ticket.userId });
+                // Construct a proper name from first/last name, or fall back to email or ID
+                const winnerName = (user?.firstName || user?.lastName)
+                  ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
+                  : `User ${ticket.userId.slice(-6)}`;
+                const winnerEmail = user?.email || "";
+
+                // Update the prize
+                openPrize.winner = ticket.userId;
+                openPrize.winnerName = winnerName;
+                openPrize.winnerEmail = winnerEmail;
+                openPrize.winnerTicketId = ticket._id.toString();
+                openPrize.status = "WON";
+                openPrize.wonAt = new Date();
+
+                rule.currentWinners += 1;
+                if (rule.currentWinners >= rule.maxWinners) {
+                  rule.isCompleted = true;
+                }
+
+                currentGame.autoClose.currentTotalWinners += 1;
+                totalWinnersFound++;
+
+                winnersToAnnounce.push({
+                  winnerName,
+                  winnerEmail,
+                  winnerId: ticket.userId,
+                  ticketId: ticket._id.toString(),
+                  ticketNumber: ticket.ticketNumber,
+                  prizeName: openPrize.name,
+                  prizeAmount: openPrize.amount,
+                  xpPoints: openPrize.xpPoints,
+                  ruleType: rule.type,
+                });
+
+                console.log(`Winner found! ${winnerName} (${winnerEmail}) won ${openPrize.name} (${rule.type})`);
+              }
+            }
+          }
+        }
+
+        if (totalWinnersFound > 0) {
+          await currentGame.save();
+          for (const winner of winnersToAnnounce) {
+            io.to(`game-${gameId}`).emit("winner-detected", winner);
+          }
+          await Game.findByIdAndUpdate(gameId, {
+            prizes: currentGame.winningRules.flatMap((r: any) => r.prizes),
+          });
+        }
+
+        // Check if all numbers drawn
+        if (updatedNumbers.length >= 90) {
+          await Game.findByIdAndUpdate(gameId, { status: "CLOSED" });
+          io.to(`game-${gameId}`).emit("game-closed", {
+            reason: "all_numbers_drawn",
+            totalNumbers: 90,
+          });
+        }
+
+        // *** MAGIC TRICK: Reset auto-play if active ***
+        if (activeGames.has(gameId)) {
+          console.log(`Admin manual call: Restarting auto-play timer for game-${gameId}`);
+          startAutoPlayLoop(gameId); // Restart the loop = Wait full 4s before next number
+        }
+
+      } catch (error) {
+        console.error("Error in admin-call-number:", error);
+        socket.emit("error", { message: "Failed to call number" });
+      }
+    });
+
+    // Start game and notify all booked users
+    socket.on("start-game", async ({ gameId }) => {
+      console.log(`Starting game-${gameId}`);
+
+      await connectDB();
+      const { Game, Ticket, User } = await getModels();
+
+      try {
+        // Update game status to LIVE
+        await Game.findByIdAndUpdate(gameId, { status: "LIVE" });
+
+        // Get all ticket holders for this game
+        const tickets = await Ticket.find({ gameId, status: "ACTIVE" }).distinct("userId");
+
+        // Broadcast game started to the game room
+        io.to(`game-${gameId}`).emit("game-started", {
+          gameId,
+          message: "Game has started! Join now to play.",
+        });
+
+        // Also emit to all connected sockets (for notifications)
+        io.emit("game-notification", {
+          type: "GAME_STARTED",
+          gameId,
+          message: "A game you have tickets for has started!",
+          ticketHolders: tickets,
+        });
+
+        io.to(`game-${gameId}`).emit("game-status-changed", { status: "LIVE" });
+        console.log(`Game ${gameId} started, notified ${tickets.length} users`);
+      } catch (error) {
+        console.error("Error starting game:", error);
+        socket.emit("error", { message: "Failed to start game" });
+      }
+    });
+
+    // Start auto-play
+    socket.on("start-auto-play", async ({ gameId }) => {
+      console.log(`Starting auto-play for game-${gameId}`);
+
+      await connectDB();
+      const { Game } = await getModels();
+
+      // Update game status to LIVE
+      await Game.findByIdAndUpdate(gameId, { status: "LIVE" });
+      io.to(`game-${gameId}`).emit("game-status-changed", { status: "LIVE" });
+
+      // Start the auto-play loop
+      startAutoPlayLoop(gameId);
+
       io.to(`game-${gameId}`).emit("auto-play-started", { gameId });
     });
 

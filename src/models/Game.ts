@@ -15,6 +15,8 @@ export interface IPrize {
   position: number; // 1st, 2nd, 3rd, etc.
   ruleType: WinningRuleType; // Which winning rule this prize is for
   winner?: string; // User ID
+  winnerEmail?: string;
+  winnerName?: string;
   winnerTicketId?: string; // Ticket ID
   status: 'OPEN' | 'WON';
   wonAt?: Date;
@@ -61,7 +63,9 @@ const PrizeSchema = new Schema({
     enum: ['FULL_HOUSE', 'TOP_LINE', 'MIDDLE_LINE', 'BOTTOM_LINE', 'EARLY_FIVE', 'CORNERS'],
     required: true
   },
-  winner: { type: String },
+  winner: { type: String }, // User ID
+  winnerEmail: { type: String },
+  winnerName: { type: String },
   winnerTicketId: { type: String },
   status: { type: String, enum: ['OPEN', 'WON'], default: 'OPEN' },
   wonAt: { type: Date }

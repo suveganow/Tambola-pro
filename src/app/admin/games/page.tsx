@@ -18,6 +18,7 @@ import { SearchInput } from "@/components/admin/search-input";
 import { CreateGameDialog } from "@/components/admin/create-game-dialog";
 import Link from "next/link";
 import { useRoleProtection } from "@/hooks/useRoleProtection";
+import { useRouter } from "next/navigation";
 
 interface Game {
   _id: string;
@@ -34,6 +35,8 @@ export default function GamesPage() {
     allowedRole: "admin",
     redirectTo: "/dashboard",
   });
+
+  const router = useRouter();
 
   const [games, setGames] = useState<Game[]>([]);
   const [filteredGames, setFilteredGames] = useState<Game[]>([]);
@@ -173,7 +176,11 @@ export default function GamesPage() {
           {/* Mobile: Card View */}
           <div className="grid grid-cols-1 gap-4 lg:hidden">
             {filteredGames.map((game) => (
-              <Card key={game._id} className="overflow-hidden">
+              <Card
+                key={game._id}
+                className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => router.push(`/admin/games/${game._id}`)}
+              >
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div>
@@ -203,13 +210,11 @@ export default function GamesPage() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Link href={`/admin/games/${game._id}`} className="flex-1">
-                      <Button variant="outline" className="w-full" size="sm">
-                        View Details
-                      </Button>
-                    </Link>
+                    <Button variant="outline" className="flex-1" size="sm">
+                      View Details
+                    </Button>
                     {game.status === "WAITING" && (
-                      <Link href={`/admin/games/${game._id}`}>
+                      <Link href={`/admin/games/${game._id}`} onClick={(e) => e.stopPropagation()}>
                         <Button className="bg-green-600 hover:bg-green-700" size="sm">
                           Start
                         </Button>
@@ -248,7 +253,11 @@ export default function GamesPage() {
               </thead>
               <tbody className="divide-y">
                 {filteredGames.map((game) => (
-                  <tr key={game._id} className="hover:bg-gray-50">
+                  <tr
+                    key={game._id}
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => router.push(`/admin/games/${game._id}`)}
+                  >
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900">{game.name}</div>
                     </td>
@@ -267,12 +276,7 @@ export default function GamesPage() {
                       {new Date(game.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex justify-end gap-2">
-                        <Link href={`/admin/games/${game._id}`}>
-                          <Button variant="outline" size="sm">
-                            View
-                          </Button>
-                        </Link>
+                      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         {game.status === "WAITING" && (
                           <Link href={`/admin/games/${game._id}`}>
                             <Button
@@ -283,6 +287,11 @@ export default function GamesPage() {
                             </Button>
                           </Link>
                         )}
+                        <Link href={`/admin/games/${game._id}`}>
+                          <Button variant="ghost" size="sm">
+                            View
+                          </Button>
+                        </Link>
                       </div>
                     </td>
                   </tr>

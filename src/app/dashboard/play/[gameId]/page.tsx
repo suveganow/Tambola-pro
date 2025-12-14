@@ -99,7 +99,16 @@ export default function UserGameRoom() {
 
     // Socket connection
     const socket = connectSocket();
-    joinGame(gameId);
+
+    // Handle existing connection
+    if (socket.connected) {
+      joinGame(gameId);
+    }
+
+    socket.on("connect", () => {
+      console.log("Connected to socket, joining game...");
+      joinGame(gameId);
+    });
 
     socket.on("number-called", (data: { number: number; drawnNumbers?: number[] }) => {
       const number = typeof data === "number" ? data : data.number;
@@ -130,6 +139,7 @@ export default function UserGameRoom() {
     });
 
     return () => {
+      socket.off("connect"); // Clean up connect listener
       socket.off("number-called");
       socket.off("winner-detected");
       socket.off("game-status-changed");
@@ -410,12 +420,12 @@ export default function UserGameRoom() {
                     <div
                       key={ticket.ticketNumber}
                       className={`relative p-3 rounded-lg border-2 text-center transition-all ${winner
-                          ? "bg-gradient-to-br from-yellow-100 to-orange-100 border-yellow-400"
-                          : isMine
-                            ? "bg-purple-100 border-purple-400"
-                            : ticket.isBooked
-                              ? "bg-gray-100 border-gray-300"
-                              : "bg-green-50 border-green-300"
+                        ? "bg-gradient-to-br from-yellow-100 to-orange-100 border-yellow-400"
+                        : isMine
+                          ? "bg-purple-100 border-purple-400"
+                          : ticket.isBooked
+                            ? "bg-gray-100 border-gray-300"
+                            : "bg-green-50 border-green-300"
                         }`}
                     >
                       {winner && (

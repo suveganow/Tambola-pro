@@ -47,6 +47,8 @@ interface Game {
     name: string;
     amount: number;
     winner?: string;
+    winnerName?: string;
+    winnerEmail?: string;
     status: "OPEN" | "WON";
     ruleType?: string;
   }[];
@@ -119,6 +121,13 @@ function GameControlContent() {
   // Setup socket connection and events
   useEffect(() => {
     const socket = connectSocket();
+
+    // Handle existing connection
+    if (socket.connected) {
+      console.log("Socket already connected, joining game...");
+      setIsConnected(true);
+      joinGame(gameId);
+    }
 
     socket.on("connect", () => {
       console.log("Admin connected to socket");
@@ -502,7 +511,7 @@ function GameControlContent() {
               <AdminNumberPad
                 drawnNumbers={drawnNumbers}
                 onNumberSelect={handleManualCallNumber}
-                disabled={gameStatus === "PAUSED" || isAutoPlaying}
+                disabled={false}
                 onVoiceToggle={() => setIsVoiceEnabled(!isVoiceEnabled)}
                 voiceEnabled={isVoiceEnabled}
               />
@@ -526,12 +535,30 @@ function GameControlContent() {
                         }`}
                     >
                       <div>
-                        <span className="font-semibold text-gray-800">{prize.name}</span>
-                        <span className="text-sm text-gray-500 ml-2">₹{prize.amount}</span>
-                        {prize.ruleType && (
-                          <Badge variant="outline" className="ml-2 text-xs">
-                            {prize.ruleType.replace(/_/g, " ")}
-                          </Badge>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-800">{prize.name}</span>
+                          <span className="text-sm text-gray-500">₹{prize.amount}</span>
+                          {prize.ruleType && (
+                            <Badge variant="outline" className="text-xs sm:hidden xl:inline-flex">
+                              {prize.ruleType.replace(/_/g, " ")}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Winner Details */}
+                        {prize.status === "WON" && (
+                          <div className="mt-1 flex flex-col">
+                            {prize.winnerName && (
+                              <span className="text-sm font-medium text-green-700">
+                                🏆 {prize.winnerName}
+                              </span>
+                            )}
+                            {prize.winnerEmail && (
+                              <span className="text-xs text-gray-500">
+                                {prize.winnerEmail}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
                       <Badge

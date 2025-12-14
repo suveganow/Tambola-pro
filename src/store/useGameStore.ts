@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 // Winner information interface
 export interface WinnerInfo {
   winnerName: string;
+  winnerEmail?: string;
   winnerId: string;
   ticketId: string;
   prizeName: string;

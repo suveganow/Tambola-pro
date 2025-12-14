@@ -9,6 +9,7 @@ import { useVoiceAnnouncer } from "./voice-announcer";
 
 interface WinnerAnnouncementProps {
   winnerName: string;
+  winnerEmail?: string;
   winnerId?: string;
   ticketId?: string;
   prizeName: string;
@@ -22,6 +23,7 @@ interface WinnerAnnouncementProps {
 
 export function WinnerAnnouncement({
   winnerName,
+  winnerEmail,
   winnerId,
   ticketId,
   prizeName,
@@ -180,6 +182,12 @@ export function WinnerAnnouncement({
                 {winnerName}
               </div>
             </div>
+            {/* Winner Email */}
+            {winnerEmail && (
+              <div className="text-sm font-medium text-gray-500">
+                {winnerEmail}
+              </div>
+            )}
             {/* Ticket ID display */}
             {displayTicketId && (
               <div className="text-sm text-gray-500 font-mono bg-gray-100 inline-block px-3 py-1 rounded-full">
@@ -211,7 +219,7 @@ export function WinnerAnnouncement({
               {/* Prize amount with animation */}
               <div className="mt-4 relative">
                 <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-500 via-emerald-500 to-green-500">
-                  {prizeAmount.toLocaleString('en-IN')} XP
+                  {(prizeAmount || 0).toLocaleString('en-IN')} XP
                 </div>
               </div>
 
@@ -257,6 +265,7 @@ export function WinnerAnnouncementFromStore() {
   return (
     <WinnerAnnouncement
       winnerName={currentWinner.winnerName}
+      winnerEmail={currentWinner.winnerEmail}
       winnerId={currentWinner.winnerId}
       ticketId={currentWinner.ticketId}
       prizeName={currentWinner.prizeName}

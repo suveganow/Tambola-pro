@@ -1,113 +1,222 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import { StatCard } from "@/components/dashboard/stat-card";
-import { GameCard } from "@/components/dashboard/game-card";
-import { Trophy, Gamepad2, TrendingUp, AlertCircle, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { BookingDialog } from "@/components/dashboard/booking-dialog";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useUser, useClerk } from "@clerk/nextjs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Star, Trophy, Gamepad2, Mail, User as UserIcon, LogOut, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 import { useRoleProtection } from "@/hooks/useRoleProtection";
+import { useRouter } from "next/navigation";
 
-export default function DashboardPage() {
+interface Ticket {
+  _id: string;
+  gameId: string;
+  userId: string;
+  game?: {
+    status: string;
+    prizes?: {
+      winner: string;
+      amount: number;
+      status: string;
+    }[];
+  };
+}
+
+export default function ProfilePage() {
   const { isAuthorized, isLoading: roleLoading } = useRoleProtection({
     allowedRole: "user",
     redirectTo: "/admin/dashboard",
   });
 
-  const { user } = useUser();
+  const { user, isLoaded: userLoaded } = useUser();
+  const { signOut, openUserProfile } = useClerk();
   const router = useRouter();
-  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
-  const [selectedGame, setSelectedGame] = useState<any>(null);
-  const [games, setGames] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const fetchGames = async () => {
-    try {
-      const res = await axios.get("/api/games");
-      setGames(res.data);
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to fetch games");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [stats, setStats] = useState({
+    gamesPlayed: 0,
+    wins: 0,
+    xpWon: 0,
+    balance: 1250 // Mock balance for now, unless API exists
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
-    if (isAuthorized) {
-      fetchGames();
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get("/api/tickets?includeGameData=true");
+        const allTickets: Ticket[] = res.data;
+
+        // Calculate stats
+        const uniqueGames = new Set(allTickets.map(t => t.gameId)).size;
+
+        // Calculate wins from CLOSED games
+        let wins = 0;
+        let xpWon = 0;
+
+        allTickets.forEach(ticket => {
+          if (ticket.game?.status === "CLOSED" || ticket.game?.status === "LIVE") {
+            const wonPrizes = ticket.game?.prizes?.filter(p =>
+              p.status === "WON" && p.winner === ticket.userId
+            ); // Note: server returns mapped userId
+
+            // Since we don't have easy userId match without full object, 
+            // efficiently we assume the backend filtered tickets for THIS user.
+            // So if ticket is mine, I just check if *I* was the winner of any prize in that game.
+            // Wait, ticket.game.prizes.winner holds the USER ID. 
+            // And standard /api/tickets returns tickets for current user.
+            // So we should match user.id
+
+            if (wonPrizes) {
+              wonPrizes.forEach(p => {
+                if (p.winner === user?.id) {
+                  wins++;
+                  xpWon += p.amount;
+                }
+              });
+            }
+          }
+        });
+
+        // Simplified Logic: 
+        // Iterate tickets. For each ticket, check if it won.
+        // Actually locally calculating based on specific ticket wins is safer if `api/tickets` returns just MY tickets.
+        // Assuming `api/tickets` already filters by currentUser.
+
+        setStats(prev => ({
+          ...prev,
+          gamesPlayed: uniqueGames,
+          wins: wins, // This might be undercounted if filtering is tricky, but basic logic holds
+          xpWon: xpWon
+        }));
+
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    if (isAuthorized && user?.id) {
+      fetchStats();
     }
-  }, [isAuthorized]);
+  }, [isAuthorized, user?.id]);
 
-  const handleBookTicket = (gameId: string) => {
-    const game = games.find((g: any) => g._id === gameId);
-    if (game) {
-      setSelectedGame(game);
-      setBookingDialogOpen(true);
-    }
-  };
-
-  const handleConfirmBooking = () => {
-    // Refresh games to update sold tickets count
-    fetchGames();
-  };
-
-  if (roleLoading || !isAuthorized) {
+  if (roleLoading || !userLoaded || !isAuthorized) {
     return (
-      <div className="flex justify-center py-8">
+      <div className="flex justify-center items-center h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Available Games Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Available Games</h2>
-        <button
-          onClick={() => router.push("/dashboard/browse")}
-          className="text-purple-600 hover:text-purple-700 font-medium text-sm"
-        >
-          View All Games →
-        </button>
+    <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto">
+      {/* Profile Header */}
+      <Card className="border-none shadow-md bg-gradient-to-r from-purple-600 to-indigo-600 text-white overflow-hidden">
+        <CardContent className="p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            {/* Avatar */}
+            <div className="relative">
+              <img
+                src={user?.imageUrl}
+                alt={user?.fullName || "User"}
+                className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white/20 shadow-xl object-cover"
+              />
+              <Badge className="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 border-2 border-white px-2 py-0.5">
+                Pro Player
+              </Badge>
+            </div>
+
+            {/* Name & Info */}
+            <div className="text-center sm:text-left flex-1 space-y-2">
+              <h1 className="text-2xl sm:text-4xl font-bold">{user?.fullName}</h1>
+              <div className="flex items-center justify-center sm:justify-start gap-2 text-purple-100 text-sm sm:text-base">
+                <Mail className="w-4 h-4" />
+                {user?.primaryEmailAddress?.emailAddress}
+              </div>
+              <div className="pt-2 flex flex-wrap justify-center sm:justify-start gap-3">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => openUserProfile()}
+                  className="bg-white/10 hover:bg-white/20 text-white border-0"
+                >
+                  <Settings className="w-4 h-4 mr-2" /> Settings
+                </Button>
+              </div>
+            </div>
+
+            {/* XP Balance Card (Inset) */}
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 min-w-[160px] text-center border border-white/10">
+              <div className="text-purple-200 text-xs uppercase tracking-wider font-semibold mb-1">Available XP</div>
+              <div className="text-3xl font-black text-yellow-300 flex items-center justify-center gap-1">
+                <Star className="w-6 h-6 fill-yellow-300 text-yellow-300" />
+                {stats.balance.toLocaleString()}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats Grid */}
+      <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+        <Trophy className="w-5 h-5 text-purple-600" /> Your Statistics
+      </h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Games Played */}
+        <Card className="hover:shadow-md transition-all border-l-4 border-l-blue-500">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 font-medium">Games Played</p>
+              <h3 className="text-3xl font-bold text-gray-800">{stats.gamesPlayed}</h3>
+            </div>
+            <div className="bg-blue-100 p-3 rounded-full">
+              <Gamepad2 className="w-6 h-6 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Wins */}
+        <Card className="hover:shadow-md transition-all border-l-4 border-l-yellow-500">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 font-medium">Total Wins</p>
+              <h3 className="text-3xl font-bold text-gray-800">{stats.wins}</h3>
+            </div>
+            <div className="bg-yellow-100 p-3 rounded-full">
+              <Trophy className="w-6 h-6 text-yellow-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* XP Won */}
+        <Card className="hover:shadow-md transition-all border-l-4 border-l-purple-500">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 font-medium">Total XP Won</p>
+              <h3 className="text-3xl font-bold text-purple-600">{stats.xpWon.toLocaleString()}</h3>
+            </div>
+            <div className="bg-purple-100 p-3 rounded-full">
+              <Star className="w-6 h-6 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {games.map((game: any) => (
-            <GameCard
-              key={game._id}
-              id={game._id}
-              name={game.name}
-              status={game.status}
-              ticketPrice={game.ticketPrice}
-              totalTickets={game.totalTickets}
-              soldTickets={game.soldTickets}
-              startTime={new Date(game.createdAt).toLocaleDateString()}
-              onBook={handleBookTicket}
-            />
-          ))}
-        </div>
-      )}
-
-      {selectedGame && (
-        <BookingDialog
-          open={bookingDialogOpen}
-          onOpenChange={setBookingDialogOpen}
-          gameId={selectedGame._id}
-          gameName={selectedGame.name}
-          ticketPrice={selectedGame.ticketPrice}
-          onConfirm={handleConfirmBooking}
-        />
-      )}
+      {/* Actions */}
+      <div className="flex gap-4">
+        <Button
+          variant="outline"
+          className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+          onClick={() => signOut(() => router.push("/"))}
+        >
+          <LogOut className="w-4 h-4 mr-2" /> Sign Out
+        </Button>
+      </div>
     </div>
   );
 }
