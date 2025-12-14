@@ -19,6 +19,7 @@ interface Ticket {
     status: string;
     prizes?: {
       winner: string;
+      winnerTicketId?: string;
       amount: number;
       status: string;
     }[];
@@ -39,7 +40,7 @@ export default function ProfilePage() {
     gamesPlayed: 0,
     wins: 0,
     xpWon: 0,
-    balance: 1250 // Mock balance for now, unless API exists
+    balance: 0
   });
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -58,38 +59,32 @@ export default function ProfilePage() {
 
         allTickets.forEach(ticket => {
           if (ticket.game?.status === "CLOSED" || ticket.game?.status === "LIVE") {
+            // Check if THIS specific ticket won any prize
+            // The prize object in game.prizes has 'winnerTicketId'
             const wonPrizes = ticket.game?.prizes?.filter(p =>
-              p.status === "WON" && p.winner === ticket.userId
-            ); // Note: server returns mapped userId
+              p.status === "WON" &&
+              p.winnerTicketId === ticket._id // Match specific ticket ID
+            );
 
-            // Since we don't have easy userId match without full object, 
-            // efficiently we assume the backend filtered tickets for THIS user.
-            // So if ticket is mine, I just check if *I* was the winner of any prize in that game.
-            // Wait, ticket.game.prizes.winner holds the USER ID. 
-            // And standard /api/tickets returns tickets for current user.
-            // So we should match user.id
-
-            if (wonPrizes) {
+            if (wonPrizes && wonPrizes.length > 0) {
               wonPrizes.forEach(p => {
+                // Double check user match for safety, though ticket._id check is strong
                 if (p.winner === user?.id) {
                   wins++;
-                  xpWon += p.amount;
+                  // Ensure amount is a number to prevent NaN
+                  xpWon += (Number(p.amount) || 0);
                 }
               });
             }
           }
         });
 
-        // Simplified Logic: 
-        // Iterate tickets. For each ticket, check if it won.
-        // Actually locally calculating based on specific ticket wins is safer if `api/tickets` returns just MY tickets.
-        // Assuming `api/tickets` already filters by currentUser.
-
         setStats(prev => ({
           ...prev,
           gamesPlayed: uniqueGames,
-          wins: wins, // This might be undercounted if filtering is tricky, but basic logic holds
-          xpWon: xpWon
+          wins: wins,
+          xpWon: xpWon,
+          balance: xpWon // Available XP = Total Won XP (as requested)
         }));
 
       } catch (error) {

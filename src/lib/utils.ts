@@ -35,7 +35,7 @@ export function getErrorMessage(error: any): string {
     // Check for "details" (sometimes used for validation errors)
     if (data.details) {
       if (Array.isArray(data.details)) {
-        return data.details.map((d: any) => `${d.path?.join('.') || 'Field'}: ${d.message}`).join(', ');
+        return data.details.map((d: any) => `${d.path?.join('.') || d.field || 'Field'}: ${d.message}`).join(', ');
       }
       if (typeof data.details === 'string') return data.details;
     }

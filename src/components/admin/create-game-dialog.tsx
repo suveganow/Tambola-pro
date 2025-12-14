@@ -68,7 +68,7 @@ const gameSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   totalTickets: z.preprocess(
     (val) => (typeof val === 'string' ? Number(val) : val),
-    z.number().min(10, "Must have at least 10 tickets")
+    z.number().min(5, "Must have at least 5 tickets")
   ),
   ticketXpCost: z.preprocess(
     (val) => (typeof val === 'string' ? Number(val) : val),

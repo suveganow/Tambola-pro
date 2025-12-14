@@ -45,7 +45,7 @@ const createGameSchema = z.object({
 const legacyCreateGameSchema = z.object({
   name: z.string().min(3),
   ticketPrice: z.number().min(1),
-  totalTickets: z.number().min(10),
+  totalTickets: z.number().min(5),
   prizes: z.array(z.object({
     name: z.string(),
     amount: z.number(),

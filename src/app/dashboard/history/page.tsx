@@ -22,7 +22,9 @@ interface Game {
     amount: number;
     status: string;
     winner?: string;
+    winnerTicketId?: string;
     ruleType?: string;
+    position?: number;
   }>;
   winningRules?: Array<{
     type: string;
@@ -88,13 +90,14 @@ export default function HistoryPage() {
     if (!ticket.game?.prizes) return null;
 
     const wonPrize = ticket.game.prizes.find(
-      (prize) => prize.status === "WON" && prize.winner === ticket.userId
+      (prize) => prize.status === "WON" && prize.winnerTicketId === ticket._id
     );
 
     if (wonPrize) {
       return {
         pattern: wonPrize.ruleType || wonPrize.name,
         prizeAmount: wonPrize.amount,
+        position: wonPrize.position
       };
     }
     return null;
@@ -197,9 +200,15 @@ export default function HistoryPage() {
                 <CardContent className="pt-6">
                   {/* Winning message */}
                   {winningInfo && (
-                    <div className="mb-4 p-3 bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-300 rounded-lg flex items-center text-yellow-800 text-sm">
-                      <Trophy className="w-4 h-4 mr-2" />
-                      🎉 You won <strong className="mx-1">{winningInfo.pattern.replace(/_/g, " ")}</strong> - ₹{winningInfo.prizeAmount?.toLocaleString()}
+                    <div className="mb-4 p-3 bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-300 rounded-lg flex flex-col gap-1 text-yellow-800 text-sm">
+                      <div className="flex items-center font-bold">
+                        <Trophy className="w-4 h-4 mr-2" />
+                        🎉 You won <strong className="mx-1">{winningInfo.pattern.replace(/_/g, " ")}</strong>
+                        {winningInfo.position && <Badge variant="secondary" className="ml-2 bg-yellow-200 text-yellow-900 border-yellow-300">#{winningInfo.position}</Badge>}
+                      </div>
+                      <div className="ml-6 text-yellow-700">
+                        Prize: ₹{winningInfo.prizeAmount?.toLocaleString()}
+                      </div>
                     </div>
                   )}
 
