@@ -195,11 +195,23 @@ io.on("connection", (socket: Socket) => {
 
     const interval = setInterval(async () => {
       try {
+        console.log(`[AutoPlay Tick] Executing loop for game-${gameId}`);
         await connectDB();
         const { Game, Ticket, User } = await getModels();
+
+        console.log(`[AutoPlay Debug] Fetching game-${gameId} from DB...`);
         const game = await Game.findById(gameId);
 
-        if (!game || game.status === "CLOSED") {
+        if (!game) {
+          console.log(`[AutoPlay Error] Game ${gameId} not found in DB`);
+          clearInterval(interval);
+          activeGames.delete(gameId);
+          return;
+        }
+
+        console.log(`[AutoPlay Debug] Game found. Status: ${game.status}, Drawn: ${game.drawnNumbers?.length || 0}`);
+
+        if (game.status === "CLOSED") {
           console.log(`Game ${gameId} is closed, stopping auto-play`);
           clearInterval(interval);
           activeGames.delete(gameId);
@@ -207,11 +219,13 @@ io.on("connection", (socket: Socket) => {
         }
 
         if (game.status === "PAUSED") {
+          console.log(`[AutoPlay Debug] Game is paused, skipping tick`);
           // Just skip this tick, don't stop
           return;
         }
 
         const drawnNumbers: number[] = game.drawnNumbers || [];
+        console.log(`[AutoPlay Debug] Drawing new number. Current counts: ${drawnNumbers.length}`);
 
         // Check if all numbers drawn
         if (drawnNumbers.length >= 90) {
@@ -231,6 +245,8 @@ io.on("connection", (socket: Socket) => {
         do {
           newNumber = Math.floor(Math.random() * 90) + 1;
         } while (drawnNumbers.includes(newNumber));
+
+        console.log(`[AutoPlay Debug] Drawn new number: ${newNumber}`);
 
         // Update game with new number
         const updatedNumbers = [...drawnNumbers, newNumber];
@@ -357,7 +373,7 @@ io.on("connection", (socket: Socket) => {
       } catch (error) {
         console.error("Error in auto-play:", error);
       }
-    }, 3000); // 3 second interval (Updated as per request)
+    }, 4000); // 4 second interval (Updated as per request)
 
     activeGames.set(gameId, interval);
   };
