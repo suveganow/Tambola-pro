@@ -32,6 +32,17 @@ import {
   adminCallNumber,
 } from "@/lib/socket";
 import { AdminNumberPad } from "@/components/admin/admin-number-pad";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type GameStatus = "WAITING" | "LIVE" | "PAUSED" | "CLOSED";
 
@@ -71,6 +82,7 @@ function GameControlContent() {
   const [pendingTickets, setPendingTickets] = useState<any[]>([]);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
   const lastAnnouncedNumber = useRef<number | null>(null);
+  const [isEndGameDialogOpen, setIsEndGameDialogOpen] = useState(false);
 
   // Zustand store
   const {
@@ -234,6 +246,17 @@ function GameControlContent() {
   };
 
   const handleStartAutoPlay = () => {
+    console.log(`[Client Debug] Start Auto-Play Clicked for Game: ${gameId}`);
+    if (!gameId) {
+      console.error("[Client Debug] Error: No Game ID found!");
+      toast.error("Error: Game ID missing");
+      return;
+    }
+
+    // Check socket connection
+    const socket = getSocket();
+    console.log(`[Client Debug] Socket Connected: ${socket.connected}, ID: ${socket.id}`);
+
     startAutoPlay(gameId);
     if (isVoiceEnabled) announceGameStart();
   };
@@ -252,11 +275,10 @@ function GameControlContent() {
     if (isVoiceEnabled) announceGameResumed();
   };
 
-  const handleEndGame = () => {
-    if (confirm("Are you sure you want to end the game?")) {
-      endGameSocket(gameId);
-      if (isVoiceEnabled) announceGameEnd();
-    }
+  const handleEndGameConfirm = () => {
+    endGameSocket(gameId);
+    if (isVoiceEnabled) announceGameEnd();
+    setIsEndGameDialogOpen(false);
   };
 
   // Admin manual number call
@@ -442,14 +464,34 @@ function GameControlContent() {
                   )}
 
                   {gameStatus !== "CLOSED" && gameStatus !== "WAITING" && (
-                    <Button
-                      size="lg"
-                      variant="destructive"
-                      className="w-full"
-                      onClick={handleEndGame}
-                    >
-                      <Square className="mr-2 h-5 w-5" /> End Game
-                    </Button>
+                    <AlertDialog open={isEndGameDialogOpen} onOpenChange={setIsEndGameDialogOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="lg"
+                          variant="destructive"
+                          className="w-full"
+                        >
+                          <Square className="mr-2 h-5 w-5" /> End Game
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>End Game?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to end this game? This action cannot be undone and will stop any active auto-play.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleEndGameConfirm}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            End Game
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </div>
 
