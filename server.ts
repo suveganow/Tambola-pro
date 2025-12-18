@@ -346,7 +346,7 @@ app.prepare().then(() => {
           // Check if game should auto-close
           const updatedGame = await Game.findById(gameId);
           if (updatedGame?.autoClose.enabled) {
-            const allRulesCompleted = updatedGame.winningRules.every(
+            const allRulesCompleted = updatedGame.winningRules.length > 0 && updatedGame.winningRules.every(
               (r: any) => r.isCompleted
             );
             const reachedWinnerLimit =
@@ -554,7 +554,7 @@ app.prepare().then(() => {
       console.log(`Starting auto-play for game-${gameId}`);
 
       await connectDB();
-      const { Game } = await getModels();
+      const { Game, Ticket } = await getModels();
 
       // Update game status to LIVE
       await Game.findByIdAndUpdate(gameId, { status: "LIVE" });
@@ -563,7 +563,24 @@ app.prepare().then(() => {
       // Start the auto-play loop
       startAutoPlayLoop(gameId);
 
+      // Get all ticket holders for this game
+      const tickets = await Ticket.find({ gameId, status: "ACTIVE" }).distinct("userId");
+
       io.to(`game-${gameId}`).emit("auto-play-started", { gameId });
+
+      // Broadcast game started to the game room (SAME AS START GAME)
+      io.to(`game-${gameId}`).emit("game-started", {
+        gameId,
+        message: "Game has started! Join now to play.",
+      });
+
+      // Also emit to all connected sockets (for notifications)
+      io.emit("game-notification", {
+        type: "GAME_STARTED",
+        gameId,
+        message: "A game you have tickets for has started!",
+        ticketHolders: tickets,
+      });
     });
 
     // Stop auto-play

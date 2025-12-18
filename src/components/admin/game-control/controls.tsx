@@ -101,7 +101,7 @@ export function GameControls({
         <div className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border border-purple-200">
           <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
           <span className="text-sm font-medium text-purple-700">
-            Auto-play active
+            Auto-play active - Numbers every 3 seconds
           </span>
         </div>
       )}
