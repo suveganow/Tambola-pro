@@ -351,7 +351,7 @@ io.on("connection", (socket: Socket) => {
       } catch (error) {
         console.error("Error in auto-play:", error);
       }
-    }, 4000); // 4 second interval (Updated as per request)
+    }, 3000); // 3 second interval (Updated as per request)
 
     activeGames.set(gameId, interval);
   };
