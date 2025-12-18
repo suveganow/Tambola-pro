@@ -344,7 +344,7 @@ io.on("connection", (socket: Socket) => {
             updatedGame.autoClose.afterWinners;
 
           if (allRulesCompleted || reachedWinnerLimit) {
-            console.log(`Auto-closing game-${gameId}`);
+            console.log(`Auto-closing game-${gameId}. Rules completed: ${allRulesCompleted}, Winner limit: ${reachedWinnerLimit} (${updatedGame.autoClose.currentTotalWinners}/${updatedGame.autoClose.afterWinners})`);
             await Game.findByIdAndUpdate(gameId, { status: "CLOSED" });
             io.to(`game-${gameId}`).emit("game-closed", {
               reason: allRulesCompleted ? "all_prizes_won" : "winner_limit_reached",
@@ -546,31 +546,54 @@ io.on("connection", (socket: Socket) => {
     await connectDB();
     const { Game, Ticket } = await getModels();
 
-    // Update game status to LIVE
-    await Game.findByIdAndUpdate(gameId, { status: "LIVE" });
-    io.to(`game-${gameId}`).emit("game-status-changed", { status: "LIVE" });
+    try {
+      const game = await Game.findById(gameId);
+      if (!game) return;
 
-    // Start the auto-play loop
-    startAutoPlayLoop(gameId);
+      // Smart check: If auto-close is enabled AND limits are already reached,
+      // the user likely wants to continue anyway (since they clicked Start).
+      // So we disable auto-close to prevent it from stopping immediately.
+      let updateData: any = { status: "LIVE" };
 
-    // Get all ticket holders for this game
-    const tickets = await Ticket.find({ gameId, status: "ACTIVE" }).distinct("userId");
+      if (game.autoClose?.enabled) {
+        const allRulesCompleted = game.winningRules.length > 0 && game.winningRules.every((r: any) => r.isCompleted);
+        const reachedWinnerLimit = game.autoClose.currentTotalWinners >= game.autoClose.afterWinners;
 
-    io.to(`game-${gameId}`).emit("auto-play-started", { gameId });
+        if (allRulesCompleted || reachedWinnerLimit) {
+          console.log(`Game ${gameId} has reached auto-close limits. Disabling auto-close to allow continuation.`);
+          updateData["autoClose.enabled"] = false;
+        }
+      }
 
-    // Broadcast game started to the game room (SAME AS START GAME)
-    io.to(`game-${gameId}`).emit("game-started", {
-      gameId,
-      message: "Game has started! Join now to play.",
-    });
+      // Update game status to LIVE (and potential auto-close fix)
+      await Game.findByIdAndUpdate(gameId, updateData);
 
-    // Also emit to all connected sockets (for notifications)
-    io.emit("game-notification", {
-      type: "GAME_STARTED",
-      gameId,
-      message: "A game you have tickets for has started!",
-      ticketHolders: tickets,
-    });
+      io.to(`game-${gameId}`).emit("game-status-changed", { status: "LIVE" });
+
+      // Start the auto-play loop
+      startAutoPlayLoop(gameId);
+
+      // Get all ticket holders for this game
+      const tickets = await Ticket.find({ gameId, status: "ACTIVE" }).distinct("userId");
+
+      io.to(`game-${gameId}`).emit("auto-play-started", { gameId });
+
+      // Broadcast game started to the game room (SAME AS START GAME)
+      io.to(`game-${gameId}`).emit("game-started", {
+        gameId,
+        message: "Game has started! Join now to play.",
+      });
+
+      // Also emit to all connected sockets (for notifications)
+      io.emit("game-notification", {
+        type: "GAME_STARTED",
+        gameId,
+        message: "A game you have tickets for has started!",
+        ticketHolders: tickets,
+      });
+    } catch (err) {
+      console.error("Error starting auto-play:", err);
+    }
   });
 
   // Stop auto-play
