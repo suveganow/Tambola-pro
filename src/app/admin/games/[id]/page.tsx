@@ -599,9 +599,12 @@ function GameControlContent() {
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-4">
                           <div>
                             <div className="font-bold text-sm sm:text-base">
-                              User: {ticket.userId}
+                              {ticket.userName || `User: ${ticket.userId}`}
                             </div>
-                            <div className="text-xs sm:text-sm text-gray-500">
+                            <div className="text-xs text-gray-600">
+                              {ticket.userEmail}
+                            </div>
+                            <div className="text-xs sm:text-sm text-gray-500 mt-1">
                               Ticket #{ticket._id.slice(-6)} •{" "}
                               {new Date(ticket.createdAt).toLocaleTimeString()}
                             </div>

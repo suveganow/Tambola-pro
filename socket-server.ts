@@ -137,9 +137,19 @@ const httpServer = createServer((req, res) => {
   res.end('Socket Server Running');
 });
 
+// CORS configuration
+const allowedOrigins = [
+  ...(process.env.NEXT_PUBLIC_SOCKET_URL || "").split(","),
+  ...(process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : []),
+  "http://localhost:3000",
+  "http://localhost:3001",
+].filter(Boolean).map(origin => origin.trim());
+
+console.log("Allowed CORS Origins:", allowedOrigins);
+
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
+    origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
     methods: ["GET", "POST"],
     credentials: true
   },

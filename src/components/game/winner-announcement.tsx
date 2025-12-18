@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import confetti from "canvas-confetti";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Trophy, Sparkles, Star } from "lucide-react";
 import { useVoiceAnnouncer } from "./voice-announcer";
@@ -170,6 +170,9 @@ export function WinnerAnnouncement({
             </div>
             <span className="animate-pulse">🎉 WINNER! 🎉</span>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Winner announcement for {prizeName}
+          </DialogDescription>
         </DialogHeader>
 
         <div className={`py-6 space-y-6 relative z-10 transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>

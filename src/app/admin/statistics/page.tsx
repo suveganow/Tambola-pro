@@ -119,13 +119,7 @@ export default function StatisticsPage() {
       </div>
 
       {/* Main Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        <StatCard
-          title="Total Revenue"
-          value={`${stats.totalRevenue.toLocaleString()} XP`}
-          icon={<DollarSign className="h-4 w-4 text-green-500" />}
-          className="border-l-4 border-l-green-500"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
         <StatCard
           title="Total Players"
           value={stats.totalPlayers.toLocaleString()}
@@ -148,55 +142,7 @@ export default function StatisticsPage() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Revenue Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center text-base sm:text-lg">
-              <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
-              Revenue (Last 7 Days)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 overflow-x-auto">
-              <div className="min-w-[300px]">
-                <div className="flex items-end justify-between h-48 gap-1 sm:gap-2">
-                  {revenueByDay.map((day, index) => (
-                    <div key={index} className="flex-1 flex flex-col items-center">
-                      <div
-                        className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t transition-all hover:from-green-600 hover:to-green-500"
-                        style={{
-                          height: `${maxRevenue > 0 ? (day.revenue / maxRevenue) * 100 : 0
-                            }%`,
-                          minHeight: day.revenue > 0 ? "8px" : "2px",
-                        }}
-                        title={`${day.revenue} XP`}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="flex justify-between mt-2 text-xs text-gray-500">
-                  {revenueByDay.map((day, index) => (
-                    <span key={index} className="flex-1 text-center">
-                      {day.label}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex justify-between mt-4 text-xs sm:text-sm">
-                  {revenueByDay.map((day, index) => (
-                    <div key={index} className="flex-1 text-center">
-                      <div className="font-semibold text-gray-900">
-                        {day.revenue.toLocaleString()} XP
-                      </div>
-                      <div className="text-xs text-gray-500 hidden sm:block">
-                        {day.tickets} tickets
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
 
         {/* Games Chart */}
         <Card>
@@ -310,23 +256,7 @@ export default function StatisticsPage() {
 
       {/* Quick Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Avg Revenue per Game</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats.totalGames > 0
-                    ? Math.round(stats.totalRevenue / stats.totalGames).toLocaleString()
-                    : 0} XP
-                </p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <DollarSign className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">

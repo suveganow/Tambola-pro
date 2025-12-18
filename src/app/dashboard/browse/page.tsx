@@ -16,7 +16,8 @@ import { useUser } from "@clerk/nextjs";
 interface Game {
   _id: string;
   name: string;
-  ticketPrice: number;
+  ticketPrice: number; // Legacy support
+  ticketXpCost?: number; // New field
   totalTickets: number;
   soldTickets: number;
   status: "WAITING" | "LIVE" | "PAUSED" | "CLOSED";
@@ -117,7 +118,9 @@ export default function AllGamesPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-purple-600">₹{game.ticketPrice}</span>
+                <span className="font-bold text-purple-600">
+                  {typeof game.ticketXpCost === 'number' ? `${game.ticketXpCost} XP` : `₹${game.ticketPrice}`}
+                </span>
                 <span className="text-gray-600">per ticket</span>
               </div>
             </div>
@@ -271,7 +274,7 @@ export default function AllGamesPage() {
           }}
           gameId={selectedGame._id}
           gameName={selectedGame.name}
-          ticketPrice={selectedGame.ticketPrice}
+          ticketPrice={selectedGame.ticketXpCost ?? selectedGame.ticketPrice ?? 0}
           onConfirm={handleBookingConfirm}
         />
       )}
@@ -286,7 +289,7 @@ export default function AllGamesPage() {
           }}
           gameId={selectedGame._id}
           gameName={selectedGame.name}
-          ticketPrice={selectedGame.ticketPrice}
+          ticketPrice={selectedGame.ticketXpCost ?? selectedGame.ticketPrice ?? 0}
           currentUserId={user?.id}
           onBookingComplete={handleBookingConfirm}
         />

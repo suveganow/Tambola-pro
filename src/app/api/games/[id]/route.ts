@@ -5,6 +5,8 @@ import Ticket from "@/models/Ticket";
 import Admin from "@/models/Admin";
 import { auth } from "@clerk/nextjs/server";
 
+import User from "@/models/User";
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -25,11 +27,23 @@ export async function GET(
       Ticket.countDocuments({ gameId: id, status: "ACTIVE" })
     ]);
 
-    // Get pending tickets with user info
-    const pendingTicketsList = await Ticket.find({ gameId: id, status: "PENDING" })
+    // Get pending tickets
+    const pendingTicketsRaw = await Ticket.find({ gameId: id, status: "PENDING" })
       .sort({ createdAt: -1 })
       .limit(10)
       .lean();
+
+    // Populate user info manually since userId is a string (clerkId)
+    const pendingTicketsList = await Promise.all(
+      pendingTicketsRaw.map(async (ticket) => {
+        const user = await User.findOne({ clerkId: ticket.userId }).select("firstName lastName email");
+        return {
+          ...ticket,
+          userName: user ? `${user.firstName} ${user.lastName}`.trim() : "Unknown User",
+          userEmail: user ? user.email : "",
+        };
+      })
+    );
 
     return NextResponse.json({
       ...game,

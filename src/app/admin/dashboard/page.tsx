@@ -96,8 +96,7 @@ export default function AdminDashboardPage() {
         <CreateGameDialog onGameCreated={fetchData} />
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         <StatCard
           title="Total Games"
           value={stats.totalGames.toString()}
@@ -115,12 +114,6 @@ export default function AdminDashboardPage() {
           value={stats.totalPlayers.toLocaleString()}
           icon={<Users className="h-4 w-4 text-blue-500" />}
           className="border-l-4 border-l-blue-500"
-        />
-        <StatCard
-          title="Total Revenue"
-          value={`₹${stats.totalRevenue.toLocaleString()}`}
-          icon={<DollarSign className="h-4 w-4 text-yellow-500" />}
-          className="border-l-4 border-l-yellow-500"
         />
       </div>
 
