@@ -556,15 +556,20 @@ io.on("connection", (socket: Socket) => {
   });
 
   // Start auto-play
-  socket.on("start-auto-play", async ({ gameId }) => {
+  socket.on("start-auto-play", async ({ gameId }, callback) => {
     console.log(`Starting auto-play for game-${gameId}`);
+
+    if (callback) callback({ status: "processing" });
 
     await connectDB();
     const { Game, Ticket } = await getModels();
 
     try {
       const game = await Game.findById(gameId);
-      if (!game) return;
+      if (!game) {
+        if (callback) callback({ error: "Game not found" });
+        return;
+      }
 
       // Smart check: If auto-close is enabled AND limits are already reached,
       // the user likely wants to continue anyway (since they clicked Start).
@@ -607,8 +612,12 @@ io.on("connection", (socket: Socket) => {
         message: "A game you have tickets for has started!",
         ticketHolders: tickets,
       });
+
+      if (callback) callback({ success: true, message: "Auto-play started" });
+
     } catch (err) {
       console.error("Error starting auto-play:", err);
+      if (callback) callback({ error: "Internal server error" });
     }
   });
 

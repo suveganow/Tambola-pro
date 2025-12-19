@@ -52,9 +52,9 @@ export const startGame = (gameId: string): void => {
 };
 
 // Start auto-play
-export const startAutoPlay = (gameId: string): void => {
+export const startAutoPlay = (gameId: string, callback?: (response: any) => void): void => {
   const s = getSocket();
-  s.emit("start-auto-play", { gameId });
+  s.emit("start-auto-play", { gameId }, callback);
 };
 
 // Stop auto-play

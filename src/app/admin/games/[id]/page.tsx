@@ -257,7 +257,16 @@ function GameControlContent() {
     const socket = getSocket();
     console.log(`[Client Debug] Socket Connected: ${socket.connected}, ID: ${socket.id}`);
 
-    startAutoPlay(gameId);
+    startAutoPlay(gameId, (response: any) => {
+      console.log("[Client Debug] Server ACK received for start-auto-play:", response);
+      if (response?.error) {
+        console.error("[Client Debug] Server returned error:", response.error);
+        toast.error(`Server Error: ${response.error}`);
+      } else {
+        toast.success("Server acknowledged auto-play start");
+      }
+    });
+
     if (isVoiceEnabled) announceGameStart();
   };
 
